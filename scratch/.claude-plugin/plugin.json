@@ -1,0 +1,11 @@
+{
+  "name": "scratch",
+  "version": "0.1.0",
+  "description": "A scratch pad to draw on with the mouse: /scratch opens it with the keyboard and pointer already in it, no click to focus.",
+  "author": {
+    "name": "Stefano Quartuccio"
+  },
+  "repository": "https://github.com/Lutifya/claude-code-mods",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

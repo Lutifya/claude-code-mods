@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-mods",
+  "owner": { "name": "Stefano Quartuccio" },
+  "plugins": [
+    {
+      "name": "next-steps",
+      "source": "./next-steps",
+      "description": "Band above the prompt: three suggested next prompts (press 1-3, 0 to dismiss) and a usage line with cost, context and the 5h/7d limit bars."
+    },
+    {
+      "name": "scratch",
+      "source": "./scratch",
+      "description": "A scratch pad to draw on with the mouse: /scratch opens it with the keyboard and pointer already in it, no click to focus."
+    }
+  ]
+}

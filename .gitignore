@@ -1,0 +1,5 @@
+# Laid by Claude Code each time it loads a mod from a folder it writes in.
+.claude-plugin/types/
+tsconfig.json
+node_modules/
+.DS_Store
