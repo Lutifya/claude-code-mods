@@ -9,6 +9,8 @@ const PANE = 'scratch'
 const STORE_KEY = 'dots'
 // Where "→ prompt" writes the sketch for Claude to read, under $HOME.
 const SKETCH_DIR = '.claude/scratch'
+// Each save deletes the sketches older than this, so the folder stays small.
+const KEEP_DAYS = 7
 const rev = atom({ plugin: 'scratch', key: 'rev' } as const, 0)
 
 export const register: Register = on => {
@@ -96,7 +98,8 @@ async function loadCanvas($: EngineInterface): Promise<Canvas> {
 }
 
 // Writes the drawing as a PNG under ~/.claude/scratch and answers its path:
-// $.fs writes text only, so the bytes go through `base64 -d` on stdin.
+// $.fs writes text only, so the bytes go through `base64 -d` on stdin. The
+// sketches past KEEP_DAYS go first; a failed cleanup doesn't stop the save.
 async function saveSketch($: EngineInterface, canvas: Canvas): Promise<string | undefined> {
   const png = canvasToPng(canvas)
   const home = await $.env.get('HOME')
@@ -105,10 +108,13 @@ async function saveSketch($: EngineInterface, canvas: Canvas): Promise<string | 
   }
   const stamp = new Date(await $.clock.now()).toISOString().replace(/[:.]/g, '-')
   const path = `${home}/${SKETCH_DIR}/sketch-${stamp}.png`
-  const written = await $.process.run(
-    ['/bin/sh', '-c', 'mkdir -p "$(dirname "$1")" && base64 -d > "$1"', 'sh', path],
-    { stdin: toBase64(png) },
-  )
+  const script = [
+    'dir=$(dirname "$1")',
+    'mkdir -p "$dir" || exit 1',
+    `find "$dir" -name 'sketch-*.png' -mmin +${KEEP_DAYS * 24 * 60} -delete 2>/dev/null`,
+    'base64 -d > "$1"',
+  ].join('\n')
+  const written = await $.process.run(['/bin/sh', '-c', script, 'sh', path], { stdin: toBase64(png) })
   if (written.exitCode !== 0) {
     $.ui.toast(`Could not write the sketch: ${written.stderr.trim().slice(0, 200)}`)
 

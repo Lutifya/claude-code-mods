@@ -103,6 +103,8 @@ test('a mouse drag draws in braille dots, the toolbar clears, u undoes, and the 
     const path = '/home/me/.claude/scratch/sketch-2026-10-13T10-00-00-000Z.png'
     expect(filled).toBe(`@${path} `)
     expect(written?.argv.at(-1)).toBe(path)
+    // Sketches older than a week go as the new one is written.
+    expect(written?.argv[2]).toContain(`find "$dir" -name 'sketch-*.png' -mmin +10080 -delete`)
     // A PNG of the drawing cropped with a margin: dots 10-40 by 9-17 plus six
     // a side, ten pixels a dot, so 430 by 210.
     expect(written?.stdin?.slice(0, 32)).toBe('iVBORw0KGgoAAAANSUhEUgAAAa4AAADS')
