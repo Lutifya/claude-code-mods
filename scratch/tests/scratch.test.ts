@@ -112,6 +112,28 @@ test('a mouse drag draws in braille dots, the toolbar clears, u undoes, and the 
   }
 })
 
+test('/scratch prune deletes the week-old sketches now and says how many went', async ($, on) => {
+  const runs: (readonly string[])[] = []
+  let gone = '/home/me/.claude/scratch/sketch-a.png\n/home/me/.claude/scratch/sketch-b.png\n'
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('command.register', ($, e) => ({ value: { command: e.name } }))
+  on('env.get', () => ({ value: '/home/me' }))
+  on('process.run', ($, e) => {
+    runs.push(e.argv)
+    return { value: { exitCode: 0, stdout: gone, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+
+  await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+  const ran = await $.command.run({ command: 'scratch', args: 'prune', origin: { kind: 'composer' }, presentation: PRESENTATION })
+  expect(ran.text).toBe('Deleted 2 sketches older than 7 days.')
+  expect(runs[0]?.at(-1)).toBe('/home/me/.claude/scratch')
+  expect(runs[0]?.[2]).toContain(`find "$dir" -name 'sketch-*.png' -mmin +10080 -delete -print`)
+
+  gone = ''
+  const again = await $.command.run({ command: 'scratch', args: 'prune', origin: { kind: 'composer' }, presentation: PRESENTATION })
+  expect(again.text).toBe('No sketches older than 7 days.')
+})
+
 test('/scratch clear wipes the pad on screen', async ($, on) => {
   memoryStore(on, { dots: ['', '', '', '', '  11', '  11', '  11', '  11'] })
   on('session.start', ($, e) => ({ cwd: e.cwd }))

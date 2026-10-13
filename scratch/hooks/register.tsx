@@ -11,6 +11,8 @@ const STORE_KEY = 'dots'
 const SKETCH_DIR = '.claude/scratch'
 // Each save deletes the sketches older than this, so the folder stays small.
 const KEEP_DAYS = 7
+// Deletes the sketches in "$dir" older than KEEP_DAYS, printing each one gone.
+const PRUNE = `find "$dir" -name 'sketch-*.png' -mmin +${KEEP_DAYS * 24 * 60} -delete -print`
 const rev = atom({ plugin: 'scratch', key: 'rev' } as const, 0)
 
 export const register: Register = on => {
@@ -18,8 +20,8 @@ export const register: Register = on => {
     const started = await next(e)
     await $.command.register({
       name: 'scratch',
-      description: 'Open the drawing pad, mouse and keys already in it (/scratch clear wipes it)',
-      argumentHint: '[clear]',
+      description: `Open the drawing pad, mouse and keys already in it (/scratch clear wipes it, /scratch prune deletes sketches older than ${KEEP_DAYS} days)`,
+      argumentHint: '[clear|prune]',
       immediate: true,
     })
 
@@ -32,6 +34,9 @@ export const register: Register = on => {
       await update($, rev, n => n + 1)
 
       return { text: 'Scratch pad cleared.' }
+    }
+    if (e.args.trim() === 'prune') {
+      return { text: await pruneSketches($) }
     }
     // `focus` plus moving the ring onto the canvas is what spares the click:
     // the pad takes the keys and the first drag draws.
@@ -111,7 +116,7 @@ async function saveSketch($: EngineInterface, canvas: Canvas): Promise<string | 
   const script = [
     'dir=$(dirname "$1")',
     'mkdir -p "$dir" || exit 1',
-    `find "$dir" -name 'sketch-*.png' -mmin +${KEEP_DAYS * 24 * 60} -delete 2>/dev/null`,
+    `${PRUNE} >/dev/null 2>&1`,
     'base64 -d > "$1"',
   ].join('\n')
   const written = await $.process.run(['/bin/sh', '-c', script, 'sh', path], { stdin: toBase64(png) })
@@ -122,6 +127,23 @@ async function saveSketch($: EngineInterface, canvas: Canvas): Promise<string | 
   }
 
   return path
+}
+
+// `/scratch prune`: the cleanup a save does, now, and what it came to.
+async function pruneSketches($: EngineInterface): Promise<string> {
+  const home = await $.env.get('HOME')
+  if (home === undefined) {
+    return 'HOME is not set: no sketch folder to prune.'
+  }
+  const script = ['dir="$1"', '[ -d "$dir" ] || exit 0', PRUNE].join('\n')
+  const pruned = await $.process.run(['/bin/sh', '-c', script, 'sh', `${home}/${SKETCH_DIR}`])
+  const count = pruned.stdout.split('\n').filter(line => line !== '').length
+  const deleted = `Deleted ${count} ${count === 1 ? 'sketch' : 'sketches'} older than ${KEEP_DAYS} days`
+  if (pruned.exitCode !== 0) {
+    return `${count > 0 ? `${deleted}; ` : ''}could not delete the rest: ${pruned.stderr.trim().slice(0, 200)}`
+  }
+
+  return count === 0 ? `No sketches older than ${KEEP_DAYS} days.` : `${deleted}.`
 }
 
 function asCanvas(value: unknown): Canvas | undefined {

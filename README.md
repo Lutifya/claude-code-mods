@@ -53,7 +53,7 @@ $0.01 · ctx 82.1k/1000.0k (8%) · 7d ██████████ 91% (resets
 - `/scratch` opens the pad with the keyboard and the pointer already in it: no click to focus first. It works while a turn is running too.
 - **Mouse.** Left-drag draws, right-drag erases. Each cell is a braille character of 2 × 4 dots, so a line is one dot thin. The top row is a toolbar: eight colors, `erase`, nib size `- n +`, `undo`, `clear`.
 - **Keys.** `1`-`8` color, `e` eraser, `+`/`-` size, `u` undo, `c` clear, `Esc` back to the prompt.
-- **→ prompt** saves the drawing as a PNG (white page, smooth strokes, cropped to what you drew) under `~/.claude/scratch/` and puts an `@` mention of it in the prompt, so Claude can open the picture. Each save deletes the sketches there older than a week.
+- **→ prompt** saves the drawing as a PNG (white page, smooth strokes, cropped to what you drew) under `~/.claude/scratch/` and puts an `@` mention of it in the prompt, so Claude can open the picture. Each save deletes the sketches there older than a week; `/scratch prune` does it right away.
 - `/scratch clear` wipes it. The drawing persists across sessions (one pad, shared by every project).
 
 **Needs the fullscreen terminal layout** (see `/config`): only there does Claude Code receive mouse events. Terminals that report sub-cell pointer positions (Ghostty, iTerm2, kitty, WezTerm) put the pen on the very dot; elsewhere, tmux included, it snaps to the middle of each cell and the line between moves is filled in dot by dot.
